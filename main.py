@@ -6,9 +6,12 @@ import pandas as pd
 
 class Scraper():
 
+    def __init__(self):
+        self.search_term = input("Producto a buscar: ")
+
     def setUp(self):
         # open chrome browser
-        self.driver = webdriver.Chrome(executable_path='C:/Users/usuario/Downloads/chromedriver.exe')
+        self.driver = webdriver.Chrome(executable_path='chromedriver.exe')
         # maximize window
         self.driver.maximize_window()
         # go to mercadolibre.com
@@ -28,23 +31,13 @@ class Scraper():
 
 
     def search(self):
-        # assign a search term
-        search_term = 'nvidia rtx 3090'
-
         search_bar = self.driver.find_element(By.CLASS_NAME, value="nav-search-input")
         search_bar.clear()
-        search_bar.send_keys(search_term)
+        search_bar.send_keys(self.search_term)
 
         search_buttom = self.driver.find_element(By.CLASS_NAME, value="nav-search-btn")
         search_buttom.click()
         sleep(3)
-
-
-    def filter_by_new_products(self):
-        #Filter results by new products
-        condition_as_new = self.driver.find_element(By.XPATH, value="//span[@class='ui-search-filter-name'][normalize-space()='Nuevo']")
-        condition_as_new.click()
-        sleep(2)
 
 
     def get_data(self):
@@ -108,7 +101,6 @@ if __name__ == "__main__":
     s.choise_country()
     s.close_cookie_banner()
     s.search()
-    s.filter_by_new_products()
     s.get_data()
     s.export_to_csv()
     s.tearDown()
