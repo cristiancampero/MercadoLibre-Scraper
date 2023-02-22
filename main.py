@@ -1,25 +1,45 @@
 from time import sleep
+import os
+import sys
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 import pandas as pd
+import warnings
+
+
 
 class Scraper():
 
     def __init__(self):
-        self.search_term = input("Producto a buscar: ")
+        if os.path.isfile("chromedriver.exe"):
+            pass
+        else:
+            print("********* No se encuentra cromedriver.exe *********")
+            sys.exit()
+
+    def preferences(self):
+        self.search_term = input("\nProducto a buscar: ")
+
 
     def setUp(self):
-        # open chrome browser
-        self.driver = webdriver.Chrome(executable_path='chromedriver.exe')
-        # maximize window
+        # Desactivar advertencia de deprecación
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        # Especificar la ruta de Chromedriver
+        chromedriver_path = 'chromedriver.exe'
+        # Crear objeto Service usando ruta de Chromedriver
+        service = Service(chromedriver_path)
+        # Crear objeto WebDriver y pasar el objeto Service al constructor de ChromeDriver
+        self.driver = webdriver.Chrome(service=service)
+        # maximizar la ventana
         self.driver.maximize_window()
-        # go to mercadolibre.com
+        # ir a  mercadolibre.com
         self.driver.get("https://www.mercadolibre.com")
 
 
     def choise_country(self):
-        #Select Argentina
+        #Seleccionar Argentina
         country = self.driver.find_element(By.ID, value="AR")
         country.click()
         sleep(3)
@@ -86,17 +106,19 @@ class Scraper():
     def export_to_csv(self):
         # export to a csv file
         df = pd.DataFrame(self.meli_data)
-        df.to_csv("meli_data.csv", sep=";")
+        df.to_csv("data/data_mercadolibre.csv", sep=";")
 
 
     def tearDown(self):
-        print('closing the browser...')
+        print("\nCerrando Google Chrome...")
         sleep(1)
+        print("\nRevisa el archivo 'data/data_mercadolibre.csv'")
         self.driver.close()
 
 
 if __name__ == "__main__":
     s = Scraper()
+    s.preferences()
     s.setUp()
     s.choise_country()
     s.close_cookie_banner()
