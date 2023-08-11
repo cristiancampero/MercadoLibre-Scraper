@@ -33,9 +33,15 @@ Para ejecutar el scraper, navegue hasta el directorio raíz del proyecto. Luego,
 python main.py
 ```
 
-
-
 Esto iniciará el proceso de scraping y creará un archivo "mercadolibre_scraped_data.csv" en el directorio "data" con todos los datos extraídos.
+
+</br>
+
+<p align="center"><img src="images\scraping_results.png"/></br>Proceso de scraping finalizado</p>
+
+</br>
+
+<p align="center"><img src="images\scraped_data.png"/></br>Ejemplo de archivo csv con datos extraídos</p>
 
 ---
 
