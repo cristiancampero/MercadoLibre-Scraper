@@ -2,7 +2,7 @@
 
 
 
-Este proyecto consiste en un script de Python que utiliza las librerías BeautifulSoup4, Selenium y Pandas y tiene como objetivo extraer datos de Mercado Libre utilizando técnicas de web scraping. El resultado final será un conjunto de datos estructurados en un archivo CSV que se pueden analizar y visualizar.
+Este proyecto consiste en un script de Python que utiliza las librerías BeautifulSoup4 y Pandas y tiene como objetivo extraer datos de Mercado Libre utilizando técnicas de web scraping. El resultado final será un conjunto de datos estructurados en un archivo CSV que se pueden analizar y visualizar.
 
 </br>
 
@@ -12,7 +12,6 @@ Este proyecto consiste en un script de Python que utiliza las librerías Beautif
 Este proyecto requiere que se tenga instalado Python 3.x en el sistema y que se cuente con las siguientes librerías instaladas:
 
 * BeautifulSoup4
-* Selenium
 * Pandas
 
 Puedes instalar estas librerías usando pip. Para instalar todas las librerías requeridas, puedes usar cualquiera de los siguientes comandos:
@@ -21,9 +20,6 @@ Puedes instalar estas librerías usando pip. Para instalar todas las librerías 
 pip install -r requirements.txt
 ```
 
-```console
-pip install beautifulsoup4 selenium pandas
-```
 </br>
 
 Este proyecto requiere que se cuente con el archivo `chromedriver.exe` en la ruta donde se ejecutará el script.
@@ -35,8 +31,8 @@ El archivo `chromedriver.exe` se utiliza para automatizar el navegador Google Ch
 Tecnologías utilizadas
 
 * Python
-* Beautiful Soup
 * Requests
+* Beautiful Soup
 * Pandas
 * chromedriver.exe
 

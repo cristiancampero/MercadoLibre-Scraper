@@ -1,128 +1,142 @@
-from time import sleep
-import os
-import sys
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
+import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import warnings
-
-
+import os
 
 class Scraper():
 
-    def __init__(self):
-        if os.path.isfile("chromedriver.exe"):
-            pass
-        else:
-            print("********* No se encuentra cromedriver.exe *********")
-            sys.exit()
+    def menu(self):
+        menu = ("""
+    Escoge el país:
+    1. Argentina
+    2. Bolivia
+    3. Brasil
+    4. Chile
+    5. Colombia
+    6. Costa Rica
+    7. Dominicana
+    8. Ecuador
+    9. Guatemala
+    10. Honduras
+    11. México
+    12. Nicaragua
+    13. Panamá
+    14. Paraguay
+    15. Perú
+    16. Salvador
+    17. Uruguay
+    18. Venezuela
+        """)
 
-    def preferences(self):
-        self.search_term = input("\nProducto a buscar: ")
+        valid_options = list(range(1, 19))
+
+        while True:
+            print(menu)
+            opcion = int(input('Número de país (Ejemplo: 5): '))
+
+            if opcion in valid_options:
+
+                # Asociar opciones con URLs
+                urls = {
+                1: 'https://listado.mercadolibre.com.ar/',
+                2: 'https://listado.mercadolibre.com.bo/',
+                3: 'https://listado.mercadolibre.com.br/',
+                4: 'https://listado.mercadolibre.cl/',
+                5: 'https://listado.mercadolibre.com.co/',
+                6: 'https://listado.mercadolibre.com.cr/',
+                7: 'https://listado.mercadolibre.com.do/',
+                8: 'https://listado.mercadolibre.com.ec/',
+                9: 'https://listado.mercadolibre.com.gt/',
+                10: 'https://listado.mercadolibre.com.hn/',
+                11: 'https://listado.mercadolibre.com.mx/',
+                12: 'https://listado.mercadolibre.com.ni/',
+                13: 'https://listado.mercadolibre.com.pa/',
+                14: 'https://listado.mercadolibre.com.py/',
+                15: 'https://listado.mercadolibre.com.pe/',
+                16: 'https://listado.mercadolibre.com.sv/',
+                17: 'https://listado.mercadolibre.com.uy/',
+                18: 'https://listado.mercadolibre.com.ve/',
+                }
+
+                self.base_url = urls[opcion]
+                # print(f'URL correspondiente: {self.base_url}')
+                break
+            else:
+                print("Escoge un número del 1 al 18")
 
 
-    def setUp(self):
-        # Desactivar advertencia de deprecación
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-        # Especificar la ruta de Chromedriver
-        chromedriver_path = 'chromedriver.exe'
-        # Crear objeto Service usando ruta de Chromedriver
-        service = Service(chromedriver_path)
-        # Crear objeto WebDriver y pasar el objeto Service al constructor de ChromeDriver
-        self.driver = webdriver.Chrome(service=service)
-        # maximizar la ventana
-        self.driver.maximize_window()
-        # ir a  mercadolibre.com
-        self.driver.get("https://www.mercadolibre.com")
 
+    def scraping(self):
+        # self.base_url = 'https://listado.mercadolibre.com.ar/'
+        # User search
+        product_name = input("\nProducto: ")
+        # Clean the user input
+        cleaned_name = product_name.replace(" ", "-").lower()
+        # Create the urls to scrap
+        urls = [self.base_url + cleaned_name]
 
-    def choise_country(self):
-        #Seleccionar Argentina
-        country = self.driver.find_element(By.ID, value="AR")
-        country.click()
-        sleep(3)
+        page_number = 50
+        for i in range(0, 10000, 50):
+            urls.append(f"{self.base_url}{cleaned_name}_Desde_{page_number + 1}_NoIndex_True")
+            page_number += 50
 
+        # create a list to save the data
+        self.data = []
+        c = 1
+            
+        # Iterate over each url
+        for i, url in enumerate(urls, start=1):
 
-    def close_cookie_banner(self):
-        cookie = self.driver.find_element(By.CLASS_NAME, value="cookie-consent-banner-opt-out__action")
-        cookie.click()
+            # Get the html of the page
+            response = requests.get(url)
+            soup = BeautifulSoup(response.text, 'html.parser')
+                
+            # take all posts
+            content = soup.find_all('li', class_='ui-search-layout__item')
+            
+            # Check if there's no content to scrape
+            if not content:
+                print("\nTermino el scraping.")
+                break
 
+            print(f"\nScrapeando pagina numero {i}. {url}")
+            
+            
+            # iteration to scrape posts
+            for post in content:
+                # get the title
+                title = post.find('h2').text
+                # get the price
+                price = post.find('span', class_='andes-money-amount__fraction').text
+                # get the url post
+                post_link = post.find("a")["href"]
+                # get the url image
+                try:
+                    img_link = post.find("img")["data-src"]
+                except:
+                    img_link = post.find("img")["src"]
+                
+                # show the data already scraped
+                # print(f"{c}. {title}, {price}, {post_link}, {img_link}")
 
-    def search(self):
-        search_bar = self.driver.find_element(By.CLASS_NAME, value="nav-search-input")
-        search_bar.clear()
-        search_bar.send_keys(self.search_term)
-
-        search_buttom = self.driver.find_element(By.CLASS_NAME, value="nav-search-btn")
-        search_buttom.click()
-        sleep(3)
-
-
-    def get_data(self):
-        # get data from each posts
-        # save the html of the page
-        content = self.driver.page_source
-
-        # parser the html
-        soup = BeautifulSoup(content, 'html.parser')
-
-        #scroll to the bottom of the page to load all images
-        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-
-        # create a dic to save the data
-        self.meli_data = []
-
-        # take all posts
-        content = soup.find_all('li', class_='ui-search-layout__item')
-
-        # iteration to scrape posts
-        for post in content:
-            # get the title
-            title = post.find('h2').text
-            # get the price
-            price = post.find('span', class_='price-tag-fraction').text
-            # get the url image
-            try:
-                img_url = post.find("img")["data-src"]
-            except:
-                img_url = post.find("img")["src"]
-            # get the url post
-            post_url = post.find("a")["href"]
-
-            # save in a dic
-            data = {
-                "title": title,
-                "price": price,
-                "image": img_url,
-                "url posts": post_url
-            }
-
-            # save the dictionaries in a list
-            self.meli_data.append(data)
-
+                # save in a dictionary
+                post_data = {
+                    "title": title,
+                    "price": price,
+                    "post link": post_link,
+                    "image link": img_link            
+                }
+                # save the dictionaries in a list
+                self.data.append(post_data)
+                c += 1
 
     def export_to_csv(self):
         # export to a csv file
-        df = pd.DataFrame(self.meli_data)
-        df.to_csv("data/data_mercadolibre.csv", sep=";")
-
-
-    def tearDown(self):
-        print("\nCerrando Google Chrome...")
-        sleep(1)
-        print("\nRevisa el archivo 'data/data_mercadolibre.csv'")
-        self.driver.close()
-
+        df = pd.DataFrame(self.data)
+        df.to_csv(r"C:\Users\usuario\Desktop\dk\Projects_working_on\Proyectos\MercadoLibre-Scraper\data\mercadolibre_scraped_data.csv", sep=";")
 
 if __name__ == "__main__":
     s = Scraper()
-    s.preferences()
-    s.setUp()
-    s.choise_country()
-    s.close_cookie_banner()
-    s.search()
-    s.get_data()
+    s.menu()
+    s.scraping()
     s.export_to_csv()
-    s.tearDown()
