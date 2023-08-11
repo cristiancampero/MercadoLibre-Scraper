@@ -36,7 +36,6 @@ class Scraper():
 
             if opcion in valid_options:
 
-                # Asociar opciones con URLs
                 urls = {
                 1: 'https://listado.mercadolibre.com.ar/',
                 2: 'https://listado.mercadolibre.com.bo/',
@@ -59,7 +58,6 @@ class Scraper():
                 }
 
                 self.base_url = urls[opcion]
-                # print(f'URL correspondiente: {self.base_url}')
                 break
             else:
                 print("Escoge un número del 1 al 18")
@@ -67,7 +65,6 @@ class Scraper():
 
 
     def scraping(self):
-        # self.base_url = 'https://listado.mercadolibre.com.ar/'
         # User search
         product_name = input("\nProducto: ")
         # Clean the user input
@@ -82,6 +79,7 @@ class Scraper():
 
         # create a list to save the data
         self.data = []
+        # create counter
         c = 1
             
         # Iterate over each url
@@ -133,7 +131,7 @@ class Scraper():
     def export_to_csv(self):
         # export to a csv file
         df = pd.DataFrame(self.data)
-        df.to_csv(r"C:\Users\usuario\Desktop\dk\Projects_working_on\Proyectos\MercadoLibre-Scraper\data\mercadolibre_scraped_data.csv", sep=";")
+        df.to_csv("data\mercadolibre_scraped_data.csv", sep=";")
 
 if __name__ == "__main__":
     s = Scraper()
