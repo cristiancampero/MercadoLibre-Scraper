@@ -1,0 +1,43 @@
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.1.0/papaparse.min.js"></script>
+<script>
+    function create_html_page(page_number=1, properties_per_page=20) {
+        Papa.parse('data\mercadolibre_scraped_data.csv', {
+            download: true,
+            header: true,
+            delimiter: ';',
+            complete: function(results) {
+                var data = results.data;
+                var start_index = (page_number - 1) * properties_per_page;
+                var end_index = start_index + properties_per_page;
+                var page_data = data.slice(start_index, end_index);
+
+                var html = '<style>.property-card {display: flex; margin: 10px;}</style>\n';
+                html += '<style>.property-text {margin-left: 10px;}</style>\n';
+                for (var index in page_data) {
+                    var property = page_data[index];
+                    html += '<div class="property-card">\n';
+                    html += '<img src="' + property['first_photo'] + '" alt="Property photo" style="width: 400px; height: 250px;">\n';
+                    html += '<div class="property-text">\n';
+                    html += '<h1>' + property['title'] + '</h1>\n';
+                    html += '<p>Price: ' + property['price'] + '</p>\n';
+                    html += '<p>Rooms: ' + property['rooms'] + '</p>\n';
+                    html += '<p>Bathrooms: ' + property['bathrooms'] + '</p>\n';
+                    html += '<p>Square Meters: ' + property['square_meters'] + '</p>\n';
+                    html += '<p>Price per m2: ' + property['price_per_m2'] + '</p>\n';
+                    html += '<p>Location: ' + property['location'] + '</p>\n';
+                    html += '<a href="' + property['link'] + '">Link</a>\n';
+                    html += '</div>\n';
+                    html += '</div>\n';
+                    html += '<hr>\n';
+                }
+                if (data.length > end_index) {
+                    html += '<a href="javascript:create_html_page(' + (page_number + 1) + ');">Next</a>\n';
+                }
+                document.body.innerHTML = html;
+            }
+        });
+    }
+    create_html_page(1);  // Create first page
+</script>
+
