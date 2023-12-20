@@ -2,18 +2,14 @@ import os
 import glob
 from config import socketio, DATA_DIRECTORY, CSV_SEPARATOR
 import json
-import pandas as pd
 import dash
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-def load_data(product_name):
-    filename = f"{product_name}_scraped_data_detailed.csv"
-    file_path = os.path.join(DATA_DIRECTORY, filename)
-    return pd.read_csv(file_path, sep=CSV_SEPARATOR)
-
+def format_filename(product_name):
+    return product_name.replace(' ', '-').lower()
 
 def format_price(df):
     if "price" in df.columns:

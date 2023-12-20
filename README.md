@@ -1,19 +1,17 @@
-# <center>Proyecto de Web Scraping</center>
+# Proyecto de Web Scraping
+Inspirado en el proyecto original, hicimos un fork que tranformo el scrapper inicial en una interfaz construida en Dash que permite al usuario elegir el producto a escrapear y mostrar los datos en una pagina web con algunos graficos.
 
 
-
-Este proyecto consiste en un script de Python que utiliza las librerías Requests, BeautifulSoup4 y Pandas. Tiene como objetivo extraer datos de Mercado Libre utilizando técnicas de web scraping. El resultado final será un conjunto de datos estructurados en un archivo CSV que se pueden analizar y visualizar.
-
-</br>
-
----
 ## Requisitos
 
 Este proyecto requiere que se tenga instalado Python 3.x en el sistema y que se cuente con las siguientes librerías instaladas:
 
-* Requests
-* BeautifulSoup4
-* Pandas
+* Requests: para hacer las peticiones HTTP a ML
+* BeautifulSoup4: para transformar el HTML recibido en un objeto de Python
+* Pandas: para crear un DataFrame con los datos extraídos
+* Matplotlib: para graficar los datos extraídos
+* Dash y Flask: para crear la interfaz web
+* tqdm: para mostrar una barra de progreso durante el scraping
 
 Para instalar todas las librerías requeridas, usa el siguiente comando:
 
@@ -21,9 +19,6 @@ Para instalar todas las librerías requeridas, usa el siguiente comando:
 pip install -r requirements.txt
 ```
 
-</br>
-
----
 
 ## Uso
 
@@ -33,22 +28,15 @@ Para ejecutar el scraper, navegue hasta el directorio raíz del proyecto. Luego,
 python main.py
 ```
 
-Esto iniciará el proceso de scraping y creará un archivo "mercadolibre_scraped_data.csv" en el directorio "data" con todos los datos extraídos.
+Esto iniciara una instancia de Dash en el puerto 5002. Para acceder a la interfaz web, abra un navegador y vaya a la dirección http://localhost:5002
 
-</br>
+<p align="center"><img src="docs/home-v1.png"/></br>Home</p>
 
-<p align="center"><img src="images\scraping_results.png"/></br>Proceso de scraping finalizado</p>
+Se puede elegir un producto en el input y al clickear en 'Buscar' se ejecuta el scraper.
 
-</br>
-
-<p align="center"><img src="images\scraped_data.png"/></br>Ejemplo de archivo csv con datos extraídos</p>
-
----
-
-### Tecnologías utilizadas
-
-* Python
-* Requests
-* Beautiful Soup
-* Pandas
+### To Do
+- [ ] Agregar un input para elegir la cantidad de paginas a escrapear
+- [ ] Agregar un sort para el orden de los resultados
+- [ ] Correr un 2do scrapper que traiga info extra de cada producto
+- [ ] Agregar un gráfico de barras con la distribución del precio de cada producto
 

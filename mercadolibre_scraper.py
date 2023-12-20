@@ -3,6 +3,10 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import os
 from config import socketio
+from utils import format_filename
+from log_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class MercadoLibreScraper:
@@ -11,7 +15,7 @@ class MercadoLibreScraper:
     DATA_DIRECTORY = "data"
     CSV_SEPARATOR = ";"
     PAGE_INCREMENT = 50
-    MAX_PAGES = 200
+    MAX_PAGES = 1
 
     def __init__(self):
         self.data = []
@@ -37,7 +41,7 @@ class MercadoLibreScraper:
 
         data = {
             'title': title_element.text if title_element else None,
-            'price': price_value,
+            'price': price_value if price_value else None,
             'post link': post_link_element['href'] if post_link_element else None,
             'image link': img_element.get('data-src', img_element.get('src')) if img_element else None
         }
@@ -81,11 +85,8 @@ class MercadoLibreScraper:
         }
 
     def update_product_details(self, product_name):
-        file_path = os.path.join(self.DATA_DIRECTORY, f"{product_name}_scraped_data.csv")
-        file_path_detailed = os.path.join(self.DATA_DIRECTORY, f"{product_name}_scraped_data_detailed.csv")
-
         # Cargar el CSV en un DataFrame usando pandas
-        df = pd.read_csv(file_path, sep=self.CSV_SEPARATOR).head(10)
+        df = load_data(product_name)
 
         # Crear una columna 'envio_gratis' inicializada con False
         df['envio_gratis'] = False
@@ -101,15 +102,11 @@ class MercadoLibreScraper:
         # Imprimir las primeras filas del DataFrame para verificar los cambios
         print(df.head())
 
-        # Guardar el DataFrame actualizado nuevamente en el archivo CSV
-        df.to_csv(file_path_detailed, sep=self.CSV_SEPARATOR, index=False)
-
-        # Imprimir la ruta del archivo guardado
-        print(f"Archivo guardado en: {file_path}")
-
+        # Exportar el DataFrame a un nuevo CSV
+        self.export_to_csv(product_name)
 
     def scrape_product(self, domain, product_name, user_scraping_limit=1000):
-        cleaned_name = product_name.replace(" ", "-").lower()
+        cleaned_name = format_filename(product_name)
         base_url = self.BASE_URL.format(domain=domain)
 
         # Obtener el contenido de la primera página para extraer el número total de resultados
@@ -135,17 +132,27 @@ class MercadoLibreScraper:
             total_products_scraped += len(self.data)
 
             # Emit the progress
-            print("Intentando emitir evento...")
             socketio.emit('scrape_status', {'progress': i, 'total': self.MAX_PAGES})
-            print("Evento emitido!")
-
-        self.update_product_details(product_name)
+            logger.info(f"Scraping de página {i + 1} de {self.MAX_PAGES} completado")
+        self.export_to_csv(product_name)
+        #self.update_product_details(product_name)
 
     def export_to_csv(self, product_name):
-        filename = f"{product_name}_scraped_data.csv"
-        if not os.path.exists(self.DATA_DIRECTORY):
-            os.makedirs(self.DATA_DIRECTORY)
-        df = pd.DataFrame(self.data)
-        file_path = os.path.join(self.DATA_DIRECTORY, filename)
-        df.to_csv(file_path, sep=self.CSV_SEPARATOR)
+        try:
+            # Reemplazar espacios por guiones en el nombre del producto
+            filename = f"{product_name.replace(' ', '-')}.csv"
+            logger.info(f"Preparando para exportar datos del producto: {product_name}")
+
+            if not os.path.exists(self.DATA_DIRECTORY):
+                os.makedirs(self.DATA_DIRECTORY)
+                logger.info(f"Creado el directorio de datos: {self.DATA_DIRECTORY}")
+
+            df = pd.DataFrame(self.data)
+            file_path = os.path.join(self.DATA_DIRECTORY, filename)
+
+            df.to_csv(file_path, sep=self.CSV_SEPARATOR)
+            logger.info(f"Datos exportados exitosamente a {file_path}")
+
+        except Exception as e:
+            logger.error(f"Error al exportar datos a CSV: {e}")
 
