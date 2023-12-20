@@ -19,8 +19,8 @@ def format_price(df):
 
 
 def format_price_for_display(price):
-    # return "${:,.2f}".format(price).replace(",", "@").replace(".", ",").replace("@", ".")
-    return price
+    return "${:,.2f}".format(price).replace(",", "@").replace(".", ",").replace("@", ".")
+
 
 
 def get_latest_csv(directory):

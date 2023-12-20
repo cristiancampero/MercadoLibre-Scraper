@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import os
-from config import socketio
+from config import socketio, SCRAPER_CONFIG, DATA_DIRECTORY, CSV_SEPARATOR
 from utils import format_filename
 from log_config import get_logger
 
@@ -11,14 +11,13 @@ logger = get_logger(__name__)
 
 class MercadoLibreScraper:
 
-    BASE_URL = 'https://listado.mercadolibre.com.{domain}/'
-    DATA_DIRECTORY = "data"
-    CSV_SEPARATOR = ";"
-    PAGE_INCREMENT = 50
-    MAX_PAGES = 1
-
     def __init__(self):
         self.data = []
+        self.base_url = SCRAPER_CONFIG['base_url']
+        self.data_directory = DATA_DIRECTORY
+        self.csv_separator = CSV_SEPARATOR
+        self.page_increment = SCRAPER_CONFIG['page_increment']
+        self.max_pages = SCRAPER_CONFIG['max_pages']
 
     def get_page_content(self, url):
         try:
@@ -42,7 +41,7 @@ class MercadoLibreScraper:
         data = {
             'title': title_element.text if title_element else None,
             'price': price_value if price_value else None,
-            'post link': post_link_element['href'] if post_link_element else None,
+            'post_link': post_link_element['href'] if post_link_element else None,
             'image link': img_element.get('data-src', img_element.get('src')) if img_element else None
         }
         return data
@@ -107,7 +106,7 @@ class MercadoLibreScraper:
 
     def scrape_product(self, domain, product_name, user_scraping_limit=1000):
         cleaned_name = format_filename(product_name)
-        base_url = self.BASE_URL.format(domain=domain)
+        base_url = self.base_url.format(domain=domain)
 
         # Obtener el contenido de la primera página para extraer el número total de resultados
         page_content = self.get_page_content(base_url + cleaned_name)
@@ -119,12 +118,12 @@ class MercadoLibreScraper:
 
         total_products_scraped = 0
 
-        for i in range(0, self.MAX_PAGES):
+        for i in range(0, self.max_pages):
             if total_products_scraped >= scraping_limit:
                 print(f"\nSe alcanzó el límite de {scraping_limit} productos. Terminando.")
                 break
 
-            url = f"{base_url}{cleaned_name}_Desde_{(i * self.PAGE_INCREMENT) + 1}_NoIndex_True"
+            url = f"{base_url}{cleaned_name}_Desde_{(i * self.page_increment) + 1}_NoIndex_True"
             if not self.scrape_page(url):
                 print("\nTerminó el scraping.")
                 break
@@ -132,10 +131,10 @@ class MercadoLibreScraper:
             total_products_scraped += len(self.data)
 
             # Emit the progress
-            socketio.emit('scrape_status', {'progress': i, 'total': self.MAX_PAGES})
-            logger.info(f"Scraping de página {i + 1} de {self.MAX_PAGES} completado")
+            socketio.emit('scrape_status', {'progress': i, 'total': self.max_pages})
+            logger.info(f"Scraping de página {i + 1} de {self.max_pages} completado")
         self.export_to_csv(product_name)
-        #self.update_product_details(product_name)
+        # self.update_product_details(product_name)
 
     def export_to_csv(self, product_name):
         try:
@@ -143,16 +142,15 @@ class MercadoLibreScraper:
             filename = f"{product_name.replace(' ', '-')}.csv"
             logger.info(f"Preparando para exportar datos del producto: {product_name}")
 
-            if not os.path.exists(self.DATA_DIRECTORY):
-                os.makedirs(self.DATA_DIRECTORY)
-                logger.info(f"Creado el directorio de datos: {self.DATA_DIRECTORY}")
+            if not os.path.exists(self.data_directory):
+                os.makedirs(self.data_directory)
+                logger.info(f"Creado el directorio de datos: {self.data_directory}")
 
             df = pd.DataFrame(self.data)
-            file_path = os.path.join(self.DATA_DIRECTORY, filename)
+            file_path = os.path.join(self.data_directory, filename)
 
-            df.to_csv(file_path, sep=self.CSV_SEPARATOR)
+            df.to_csv(file_path, sep=self.csv_separator)
             logger.info(f"Datos exportados exitosamente a {file_path}")
 
         except Exception as e:
             logger.error(f"Error al exportar datos a CSV: {e}")
-

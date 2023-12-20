@@ -1,4 +1,4 @@
-from utils import format_price_for_display, format_link_to_markdown, format_filename
+from utils import format_price_for_display, format_filename, format_link_to_markdown
 from config import DATA_DIRECTORY, CSV_SEPARATOR
 import pandas as pd
 import os
@@ -18,6 +18,9 @@ class DataManager:
         if not self.df.empty:
             print(self.df.head())
 
+            if 'post_link' in self.df.columns:
+                self.df['post_link'] = self.df['post_link'].apply(format_link_to_markdown)
+
             # Ordena por una columna común o por la primera columna si 'price' no está presente
             sort_column = 'price' if 'price' in self.df.columns else self.df.columns[0]
             sorted_df = self.df.sort_values(by=sort_column, ascending=True)
@@ -25,11 +28,17 @@ class DataManager:
             # Aplica formatos específicos si las columnas existen
             if 'price' in sorted_df.columns:
                 sorted_df["price"] = sorted_df["price"].apply(format_price_for_display)
-            if 'post link' in sorted_df.columns:
-                sorted_df["post link"] = sorted_df["post link"].apply(format_link_to_markdown)
 
-            data = sorted_df.to_dict('records')
-            columns = [{'name': col, 'id': col} for col in sorted_df.columns]
+                # Configurar las columnas
+                columns = [
+                    {'name': 'Title', 'id': 'title', 'type': 'text'},
+                    {'name': 'Price', 'id': 'price', 'type': 'text'},
+                    {'name': 'Link', 'id': 'post_link', 'type': 'text', 'presentation': 'markdown'},
+                    {'name': 'Image', 'id': 'image link', 'type': 'text'}
+                ]
+
+                # Convertir el DataFrame a un formato adecuado para Dash DataTable
+                data = sorted_df.to_dict('records')
 
         return data, columns
 
