@@ -4,9 +4,9 @@ import dash_bootstrap_components as dbc
 
 server = Flask(__name__)
 socketio = SocketIO(server)
+EXTERNAL_STYLESHEETS = [dbc.themes.BOOTSTRAP]
 DATA_DIRECTORY = "data"
 CSV_SEPARATOR = ";"
-EXTERNAL_STYLESHEETS = [dbc.themes.BOOTSTRAP]
 SERVER_CONFIG = {
     "debug": True,
     "allow_unsafe_werkzeug": True,
@@ -15,5 +15,5 @@ SERVER_CONFIG = {
 SCRAPER_CONFIG = {
     'base_url': 'https://listado.mercadolibre.com.{domain}/',
     'page_increment': 50,
-    'max_pages': 1
+    'max_pages': 10
 }

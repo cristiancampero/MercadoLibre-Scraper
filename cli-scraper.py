@@ -48,5 +48,5 @@ class UserInterface:
             print("Valor inválido. Se usará el límite por defecto de 1000.")
             scraping_limit = 1000
 
-        self.scraper.scrape_product(domain, product_name, scraping_limit)
+        self.scraper.scrape_product_list(domain, product_name, scraping_limit)
         self.scraper.export_to_csv(product_name)

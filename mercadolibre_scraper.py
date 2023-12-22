@@ -1,15 +1,13 @@
-import requests
 from bs4 import BeautifulSoup
-import pandas as pd
-import os
 from config import socketio, SCRAPER_CONFIG, DATA_DIRECTORY, CSV_SEPARATOR
-from utils import format_filename
+from scraper import Scraper
+from utils import format_filename, format_link_to_markdown
 from log_config import get_logger
 
 logger = get_logger(__name__)
 
 
-class MercadoLibreScraper:
+class MercadoLibreScraper(Scraper):
 
     def __init__(self):
         self.data = []
@@ -19,18 +17,21 @@ class MercadoLibreScraper:
         self.page_increment = SCRAPER_CONFIG['page_increment']
         self.max_pages = SCRAPER_CONFIG['max_pages']
 
-    def get_page_content(self, url):
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            return response.text
-        except requests.RequestException as e:
-            raise Exception(f"Error al obtener la página {url}: {e}")
-
     def format_price(self, price_element):
         if price_element and isinstance(price_element.text, str):
             return price_element.text.replace('.', '')
         return None
+
+    def extract_product_year_km_and_publication_date(self, soup):
+        subtitle_element = soup.find('span', class_='ui-pdp-subtitle')
+        if subtitle_element:
+            parts = subtitle_element.text.split('·')
+            year_km_part = parts[0].strip() if len(parts) > 0 else ""
+            year, km = year_km_part.split('|') if '|' in year_km_part else (None, None)
+            publication_date = parts[1].strip() if len(parts) > 1 else None
+
+            return year.strip() if year else None, km.strip() if km else None, publication_date
+        return None, None, None
 
     def extract_post_data(self, post):
         title_element = post.find('h2')
@@ -52,105 +53,82 @@ class MercadoLibreScraper:
             return int(results_element.text.split()[0].replace('.', '').replace(',', ''))
         return 0  # o cualquier valor predeterminado
 
-    def scrape_page(self, url):
-        page_content = self.get_page_content(url)
-        if not page_content:
-            return False
+    def scrape_page_results(self, url):
+        logger.debug(f"Comenzando scrape_page_results para URL: {url}")
+        soup = self.get_page_content(url)
 
-        soup = BeautifulSoup(page_content, 'html.parser')
+        if not soup:
+            logger.warning("No se pudo obtener el contenido de la página.")
+            return []
+
         content = soup.find_all('li', class_='ui-search-layout__item')
+        logger.debug(f"Encontrados {len(content)} elementos en la página.")
+
+        page_data = []
         for post in content:
             post_data = self.extract_post_data(post)
-            self.data.append(post_data)
-        return True
+            page_data.append(post_data)
+            logger.debug(f"Datos del post agregados: {post_data}")
 
-    def scrape_product_page(self, url):
-        page_content = self.get_page_content(url)
-        if not page_content:
-            return False
+        logger.debug("Scrape de la página completado exitosamente.")
+        return page_data
 
-        soup = BeautifulSoup(page_content, 'html.parser')
+    def scrape_product_details(self, soup):
+        title = soup.find('h1', class_='ui-pdp-title')
+        price_simbol = soup.find('span', class_='andes-money-amount__currency-symbol')
+        price = soup.find('span', class_='andes-money-amount__fraction')
+        year, km, publication_date = self.extract_product_year_km_and_publication_date(soup)
+        link = soup.find('link', rel='canonical')
+        author = soup.find('div', class_='ui-pdp-seller-validated')
 
-        # Buscar el elemento de envío que contiene el texto "Llega"
         envio_element = soup.find('span', string=lambda text: text and "Llega" in text)
 
-        if envio_element:
-            envio = envio_element.text
-        else:
-            envio = None
-
-        return {
-            'envio': envio
+        data = {
+            'title': title.text if title else None,
+            'envio': envio_element.text if envio_element else None,
+            'price': f"{price_simbol.text} {price.text}" if price_simbol and price else None,
+            'year': year,
+            'km': km,
+            'publication_date': publication_date,
+            'author': author.text if author else None,
+            'link': format_link_to_markdown(link['href']) if link else None,
         }
 
-    def update_product_details(self, product_name):
-        # Cargar el CSV en un DataFrame usando pandas
-        df = load_data(product_name)
+        return data
 
-        # Crear una columna 'envio_gratis' inicializada con False
-        df['envio_gratis'] = False
-
-        # Recorrer cada fila (producto) del DataFrame
-        for index, product in df.iterrows():
-            details = self.scrape_product_page(product['post link'])
-
-            # Si 'envio' en details contiene la palabra 'gratis', actualiza la columna 'envio_gratis' para ese producto
-            if 'envio' in details and details['envio'] and 'gratis' in details['envio'].lower():
-                df.at[index, 'envio_gratis'] = True
-
-        # Imprimir las primeras filas del DataFrame para verificar los cambios
-        print(df.head())
-
-        # Exportar el DataFrame a un nuevo CSV
-        self.export_to_csv(product_name)
-
-    def scrape_product(self, domain, product_name, user_scraping_limit=1000):
+    def scrape_product_list(self, domain, product_name, user_scraping_limit=1000):
         cleaned_name = format_filename(product_name)
         base_url = self.base_url.format(domain=domain)
 
         # Obtener el contenido de la primera página para extraer el número total de resultados
-        page_content = self.get_page_content(base_url + cleaned_name)
-        soup = BeautifulSoup(page_content, 'html.parser')
+        soup = self.get_page_content(base_url + cleaned_name)
         total_results = self.get_total_results(soup)
 
-        # Usa el límite más pequeño: total_results, user_scraping_limit, o el límite por defecto (1000)
+        # Estimar la cantidad de productos por página
+        products_per_page = len(soup.find_all('li', class_='ui-search-layout__item'))
+        estimated_total_pages = total_results // products_per_page + (total_results % products_per_page > 0)
+
         scraping_limit = min(total_results, user_scraping_limit, 1000)
+        logger.info(f"Se obtuvieron {total_results} resultados. Se limitará el scraping a {scraping_limit} resultados.")
 
-        total_products_scraped = 0
+        all_data = []
 
-        for i in range(0, self.max_pages):
-            if total_products_scraped >= scraping_limit:
-                print(f"\nSe alcanzó el límite de {scraping_limit} productos. Terminando.")
+        for i in range(0, min(estimated_total_pages, self.max_pages)):
+            if len(all_data) >= scraping_limit:
+                logger.info(f"Se alcanzó el límite de {scraping_limit} productos. Terminando.")
                 break
 
             url = f"{base_url}{cleaned_name}_Desde_{(i * self.page_increment) + 1}_NoIndex_True"
-            if not self.scrape_page(url):
-                print("\nTerminó el scraping.")
+            scraped_page_data = self.scrape_page_results(url)
+            if not scraped_page_data:
+                logger.warning(f"La página {i + 1} no devolvió datos. Terminando.")
                 break
 
-            total_products_scraped += len(self.data)
+            all_data.extend(scraped_page_data)
+            logger.info(f"Scraping de página {i + 1} de {estimated_total_pages} completado")
 
-            # Emit the progress
-            socketio.emit('scrape_status', {'progress': i, 'total': self.max_pages})
-            logger.info(f"Scraping de página {i + 1} de {self.max_pages} completado")
-        self.export_to_csv(product_name)
-        # self.update_product_details(product_name)
+            # Emitir el progreso
+            socketio.emit('scrape_status', {'progress': i, 'total': estimated_total_pages})
 
-    def export_to_csv(self, product_name):
-        try:
-            # Reemplazar espacios por guiones en el nombre del producto
-            filename = f"{product_name.replace(' ', '-')}.csv"
-            logger.info(f"Preparando para exportar datos del producto: {product_name}")
+        return all_data
 
-            if not os.path.exists(self.data_directory):
-                os.makedirs(self.data_directory)
-                logger.info(f"Creado el directorio de datos: {self.data_directory}")
-
-            df = pd.DataFrame(self.data)
-            file_path = os.path.join(self.data_directory, filename)
-
-            df.to_csv(file_path, sep=self.csv_separator)
-            logger.info(f"Datos exportados exitosamente a {file_path}")
-
-        except Exception as e:
-            logger.error(f"Error al exportar datos a CSV: {e}")

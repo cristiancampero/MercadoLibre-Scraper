@@ -12,12 +12,12 @@ class DataManager:
     def __init__(self):
         self.df = pd.DataFrame()
 
-    def prepare_table_data(self):
-        data = []
+    def prepare_table_data(self, data):
+
+        self.df = pd.DataFrame(data)
         columns = []
         if not self.df.empty:
-            print(self.df.head())
-
+            # Aplica formatos específicos si las columnas existen
             if 'post_link' in self.df.columns:
                 self.df['post_link'] = self.df['post_link'].apply(format_link_to_markdown)
 
@@ -41,6 +41,15 @@ class DataManager:
                 data = sorted_df.to_dict('records')
 
         return data, columns
+
+    def generate_columns(self, data):
+        columns = []
+        for key in data[0].keys():
+            if "link" in key.lower():  # Detecta si la clave es un enlace
+                columns.append({'name': key.capitalize(), 'id': key, 'type': 'text', 'presentation': 'markdown', 'sortable': True})
+            else:
+                columns.append({'name': key.capitalize(), 'id': key, 'sortable': True})
+        return columns
 
     def load_data(self, product_name):
         try:
