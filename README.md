@@ -36,7 +36,6 @@ Se puede elegir un producto en el input y al clickear en 'Buscar' se ejecuta el 
 
 ### To Do
 - [ ] Agregar un input para elegir la cantidad de paginas a escrapear
-- [ ] Agregar un sort para el orden de los resultados
-- [ ] Correr un 2do scrapper que traiga info extra de cada producto
+- [x] Agregar un sort para el orden de los resultados
+- [x] Correr un 2do scrapper que traiga info extra de cada producto
 - [ ] Agregar un gráfico de barras con la distribución del precio de cada producto
-
