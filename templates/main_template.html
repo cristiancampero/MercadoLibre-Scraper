@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dash App</title>
+    {%metas%}
+    {%favicon%}
+    {%css%}
+</head>
+
+<body>
+
+    {%app_entry%}
+    <footer>
+        {%config%}
+        {%scripts%}
+        {%renderer%}
+        <!-- Puedes agregar tus scripts personalizados aquí -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.3/socket.io.js"></script>
+        <script>
+            var socket = io.connect('http://127.0.0.1:5000');
+            socket.on('scrape_status', function(data) {
+                document.getElementById('scrape-progress').innerText =
+                    'Scrape Progress: ' + data.progress + '/' + data.total;
+            });
+        </script>
+    </footer>
+
+</body>
+
+</html>
